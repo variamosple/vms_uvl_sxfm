@@ -21,3 +21,15 @@ docker run -p 10001:10001 --rm --name vms_uvl_sxfm -t vms_uvl_sxfm
 This document outlines the available endpoints and their usage for the project's API.
 
 ---
+
+### Process File
+Process and convert an uploaded file to JSON format.
+Parameter | Value
+-- | --
+Verb | `POST`
+URL | `/process-file`
+Payload | ```Multipart form data with a file. The file should be uploaded with the key file.```
+Response | ```{"json_data": "«data converted to JSON»"} or {"error": "Unsupported file format"}```
+Exception response | `HTTP response code 415, body: {"error": "Unsupported file format"}}`
+
+---

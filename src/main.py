@@ -24,7 +24,7 @@ def sxfm_uvl(sxfm_data):
     return json_data
 
 
-@app.post("/process-file/")
+@app.post("/process-file")
 async def process_file(file: UploadFile = File(...)):
     content = await file.read()
     # Decodificar si es necesario, dependiendo de cómo se manejen los datos
