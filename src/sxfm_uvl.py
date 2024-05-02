@@ -1,6 +1,6 @@
 import re
 
-from arbol import read_uvl_file, write_json_to_file
+from src.arbol import read_uvl_file, write_json_to_file
 
 import re
 
@@ -139,8 +139,8 @@ def generate_uvl(features, constraints):
 
 
 
-sxfm_content = read_uvl_file("model.xml")
-uvl_content = sxfm_to_uvl(sxfm_content)
-write_json_to_file(uvl_content, "test1.uvl")
-print(uvl_content)
+#sxfm_content = read_uvl_file("model.xml")
+#uvl_content = sxfm_to_uvl(sxfm_content)
+#write_json_to_file(uvl_content, "test1.uvl")
+#print(uvl_content)
 

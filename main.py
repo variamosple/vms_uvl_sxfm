@@ -38,6 +38,8 @@ async def process_file(file: UploadFile = File(...)):
         uvl_content = sxfm_uvl(content)
         json_data = uvl_to_json(uvl_content)
         return JSONResponse(content=json_data)
+    elif file.filename.endswith('.json'):
+        return JSONResponse(content=content)
     else:
         return {"error": "Unsupported file format"}
 

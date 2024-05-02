@@ -156,7 +156,7 @@ def generate_json(elements, relationships):
         "enable": True,
         "productLines": [{
             "id": str(uuid.uuid4()),
-            "name": "hjkhjk",
+            "name": "My product line",
             "type": "System",
             "domain": "Retail",
             "domainEngineering": {

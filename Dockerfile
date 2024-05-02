@@ -8,4 +8,4 @@ COPY . ./
 
 RUN pip install -r dependences.txt
 
-ENTRYPOINT ["uvicorn", "main_api:app", "--port", "10001", "--host", "0.0.0.0"]
+ENTRYPOINT ["uvicorn", "main:app", "--port", "10001", "--host", "0.0.0.0"]
