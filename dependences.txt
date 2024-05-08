@@ -1,0 +1,9 @@
+python-dotenv
+asyncpg
+psycopg2-binary
+python-multipart
+typing
+passlib
+fastapi
+uvicorn
+docker
