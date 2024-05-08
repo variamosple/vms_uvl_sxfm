@@ -44,115 +44,120 @@ def generate_feature(id, name, type, x, y):
         }]
     }
 
-def generate_relationship(source_id, target_id, relation_type, name):
-    relation_value = relation_type
-    if relation_type == "RootFeature":
-        relation_type = "RootFeature_Feature"
-    elif relation_type == "ConcreteFeature":
-        relation_type = "ConcreteFeature_Feature"
+def generate_relationship(source_id, target_id, relation_type, name, feature_type):
+    if feature_type == "RootFeature":
+        feature_type = "RootFeature_Feature"
+    elif feature_type == "ConcreteFeature":
+        feature_type = "ConcreteFeature_Feature"
     else:
-        relation_type = "AbstractFeature_Feature"
-
+        feature_type = "AbstractFeature_Feature"
+    print(relation_type)
+    properties = []
+    if relation_type not in ["Xor", "Or"]:  # No añadir propiedades si la relación es desde un bundle XOR u OR
+        properties = [{
+            "id": str(uuid.uuid4()),
+            "name": "Type",
+            "value": relation_type,
+            "type": "String",
+            "custom": False,
+            "display": True,
+            "possibleValues": "Mandatory,Optional,Includes,Excludes,IndividualCardinality"
+        }]
     return {
         "id": str(uuid.uuid4()),
-        "type":  relation_type,
+        "type":  feature_type,
         "name": name,
         "sourceId": source_id,
         "targetId": target_id,
         "points": [],
         "min": 0,
         "max": 9999999,
-        "properties": [{
-            "id": str(uuid.uuid4()),
-            "name": "Type",
-            "value": relation_value,
-            "type": "String",
-            "custom": False,
-            "display": True,
-            "possibleValues": "Mandatory,Optional,Includes,Excludes,IndividualCardinality"
-        }]
+        "properties": properties
     }
 
 def parse_uvl_content(uvl_content):
-    lines = uvl_content.strip().split("\n")
-    elements = []
-    relationships = []
-    feature_stack = [(None, 0, 'optional')]  # Inicialización ajustada para incluir tipo de relación
-    name_to_id = {}
-    x_base, y_base, y_increment = 350, 30, 70
-    current_relation_type = 'optional'  # Controla el tipo de relación actual
-    processing_constraints = False
+        lines = uvl_content.strip().split("\n")
+        elements = []
+        relationships = []
+        feature_stack = [(None, 0, 'Optional')]  # Inicialización ajustada para incluir tipo de relación
+        name_to_id = {}
+        x_base, y_base, y_increment = 350, 30, 70
+        current_relation_type = 'Optional'  # Controla el tipo de relación actual
+        processing_constraints = False
 
-    for index, line in enumerate(lines):
-        if not line.strip() or line.strip() == "" or index == 0:
-            continue
+        for index, line in enumerate(lines):
+            if not line.strip() or line.strip() == "" or index == 0:
+                continue
 
-        if 'features' in line.lower():
-            current_relation_type = 'optional'  # Restablece al default al empezar nuevas features
-            continue
-        elif 'constraints' in line.lower():
-            processing_constraints = True
-            continue
+            if 'features' in line.lower():
+                current_relation_type = 'Optional'  # Restablece al default al empezar nuevas features
+                continue
+            elif 'constraints' in line.lower():
+                processing_constraints = True
+                continue
 
-        indent_level = line.count("\t")
-        parsed_line = parse_feature_line(line.strip().replace('"', ''))
+            indent_level = line.count("\t")
+            parsed_line = parse_feature_line(line.strip().replace('"', ''))
 
-        if processing_constraints:
-            if parsed_line[3]:  # Si es un constraint (includes o excludes)
-                source_id = name_to_id.get(parsed_line[1])
-                target_id = name_to_id.get(parsed_line[2])
-                if source_id and target_id:
-                    relationships.append(generate_relationship(source_id, target_id, parsed_line[0], f"{parsed_line[1]}_to_{parsed_line[2]}"))
-            continue
+            if processing_constraints:
+                if parsed_line[3]:  # Si es un constraint (includes o excludes)
+                    source_id = name_to_id.get(parsed_line[1])
+                    target_id = name_to_id.get(parsed_line[2])
+                    if source_id and target_id:
+                        relationships.append(generate_relationship(source_id, target_id, parsed_line[0], f"{parsed_line[1]}_to_{parsed_line[2]}","ConcreteFeature"))
+                continue
 
-        relation_type, name, abstract, is_constraint = parsed_line
+            relation_type, name, abstract, is_constraint = parsed_line
 
-        if name.lower() in ["mandatory", "optional"]:
-            current_relation_type = name.lower()
-            continue  # No crea características para 'mandatory' o 'optional'
+            if name.lower() in ["mandatory", "optional"]:
+                current_relation_type = name.capitalize()
+                continue  # No crea características para 'mandatory' o 'optional'
 
-        while feature_stack and indent_level <= feature_stack[-1][1]:
-            feature_stack.pop()
+            while feature_stack and indent_level <= feature_stack[-1][1]:
+                feature_stack.pop()
 
-        if name.lower() in ["alternative", "or"]:
-            bundle_type = "Xor" if name.lower() == "alternative" else "Or"
-            bundle_id, bundle = create_bundle(x_base + indent_level * 100, y_base + len(elements) * y_increment, bundle_type)
-            elements.append(bundle)
-            name_to_id[bundle_type + str(indent_level)] = bundle_id  # Clave única para bundle en este nivel
-            if feature_stack:
-                parent_id = feature_stack[-1][0]
-                # Crear relación desde el padre al bundle
-                relationships.append(create_bundle_feature_relation(parent_id, bundle_id, bundle_type))
-            # Configurar este bundle como contexto actual para las próximas características
-            feature_stack.append((bundle_id, indent_level, bundle_type, bundle_id))
-            continue
+            if name.lower() in ["alternative", "or"]:
+                bundle_type = "Xor" if name.lower() == "alternative" else "Or"
+                bundle_id, bundle = create_bundle(x_base + indent_level * 100, y_base + len(elements) * y_increment, bundle_type)
+                elements.append(bundle)
+                name_to_id[bundle_type + str(indent_level)] = bundle_id  # Clave única para bundle en este nivel
+                if feature_stack:
+                    parent_id = feature_stack[-1][0]
+                    # Crear relación desde el padre al bundle
+                    relationships.append(create_bundle_feature_relation(parent_id, bundle_id, bundle_type))
+                # Configurar este bundle como contexto actual para las próximas características
+                feature_stack.append((bundle_id, indent_level, bundle_type, bundle_id))
+                continue
 
-        if not is_constraint and name.lower() not in ["mandatory", "optional", "alternative", "or"]:
-            feature_id = str(uuid.uuid4())
-            print(f"indent level {indent_level}, name {name}")
-            feature_type = "RootFeature" if indent_level == 1 else "ConcreteFeature"
-            if(abstract != None):
-                feature_type= "AbstractFeature"
-            x = x_base + indent_level * 100
-            y = y_base + len(elements) * y_increment
-            feature = generate_feature(feature_id, name, feature_type, x, y)
-            elements.append(feature)
-            name_to_id[name] = feature_id
-
-            if feature_stack:
-                parent_id = feature_stack[-1][0]
-                relationships.append(generate_relationship(parent_id, feature_id, current_relation_type, name))
+            if not is_constraint and name.lower() not in ["mandatory", "optional", "alternative", "or"]:
+                feature_id = str(uuid.uuid4())
+                #print(f"indent level {indent_level}, name {name}")
+                feature_type = "RootFeature" if indent_level == 1 else "ConcreteFeature"
+                if(abstract != None):
+                    feature_type= "AbstractFeature"
+                x = x_base + indent_level * 100
+                y = y_base + len(elements) * y_increment
+                feature = generate_feature(feature_id, name, feature_type, x, y)
+                elements.append(feature)
+                name_to_id[name] = feature_id
+                if feature_stack:
+                    parent_id = feature_stack[-1][0]
+                    if feature_stack[-1][2] in ["Xor", "Or"]:  # Si el padre es un bundle
+                        relation_type = "Xor" if feature_stack[-1][2] == "Xor" else "Or"
+                    else:
+                        relation_type = current_relation_type
+                    relationships.append(generate_relationship(parent_id, feature_id, relation_type, name,feature_type))
 
             feature_stack.append((feature_id, indent_level, current_relation_type))
 
-    return elements, relationships
+        return elements, relationships
 
 
 
 def generate_json(elements, relationships):
     model = {
         "id": str(uuid.uuid4()),
-        "name": "hjk",
+        "name": "Product lines",
         "enable": True,
         "productLines": [{
             "id": str(uuid.uuid4()),
@@ -235,5 +240,6 @@ uvl_to_json('model4.uvl', 'model4.json')
 uvl_to_json('model5.uvl', 'model5.json')
 uvl_to_json('smart_home.uvl', 'smart_home.json')
 """
+#uvl_to_json('test.uvl', 'test.json')
 
 
